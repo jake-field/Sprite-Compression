@@ -1,11 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
 using System.Drawing;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace SpriteCompression
@@ -19,21 +15,22 @@ namespace SpriteCompression
         public Form1()
         {
             InitializeComponent();
+            FolderDialog.SelectedPath = Application.StartupPath; //Easier to navigate if we start here
         }
 
-        private void button1_Click(object sender, EventArgs e)
+        private void BrowseButton_Click(object sender, EventArgs e)
         {
-            var dResult = folderBrowserDialog1.ShowDialog();
+            var dResult = FolderDialog.ShowDialog();
 
-            if(dResult == DialogResult.OK)
+            if (dResult == DialogResult.OK)
             {
-                textBox1.Text = folderBrowserDialog1.SelectedPath;
+                PathTextbox.Text = FolderDialog.SelectedPath;
 
-                var files = System.IO.Directory.EnumerateFiles(textBox1.Text);
+                var files = System.IO.Directory.EnumerateFiles(PathTextbox.Text);
 
                 LoadSprites(files);
 
-                groupBox2.Enabled = true;
+                FilterGroupbox.Enabled = true;
             }
         }
 
@@ -41,9 +38,9 @@ namespace SpriteCompression
         {
             gProcessedRMap = new Bitmap(gReducedMap);
 
-            for(int x = 0; x < gProcessedRMap.Width; ++x)
+            for (int x = 0; x < gProcessedRMap.Width; ++x)
             {
-                for(int y = 0; y < gProcessedRMap.Height; ++y)
+                for (int y = 0; y < gProcessedRMap.Height; ++y)
                 {
                     Color pixel = gProcessedRMap.GetPixel(x, y);
 
@@ -57,7 +54,7 @@ namespace SpriteCompression
             }
 
             //Update
-            pictureBox3.Image = gProcessedRMap;
+            FilteredBox.Image = gProcessedRMap;
         }
 
         private void GenerateColourPallet(List<Color> _colours)
@@ -89,14 +86,14 @@ namespace SpriteCompression
             gInstance.Flush();
 
             //Apply
-            pictureBox2.Image = dummyCanvas;
+            ColorPaletteBox.Image = dummyCanvas;
         }
 
         private void DrawImageToChannel(ref Bitmap _canvas, Bitmap _sprite, List<Color> _colourPallet, int _x, int _y, uint _mask)
         {
-            for(int x = 0; x < _sprite.Width; ++x)
+            for (int x = 0; x < _sprite.Width; ++x)
             {
-                for(int y = 0; y < _sprite.Height; ++y)
+                for (int y = 0; y < _sprite.Height; ++y)
                 {
                     int uniqueIndex = _colourPallet.IndexOf(_sprite.GetPixel(x, y));
                     if (uniqueIndex == -1) uniqueIndex = 0; //Colour not found, leave pixel alone as it might be stacked
@@ -144,7 +141,7 @@ namespace SpriteCompression
             canvas.SetResolution(_sprites[0].HorizontalResolution, _sprites[0].VerticalResolution);
 
             //Draw images to canvas
-            for(int i = 0; i < _sprites.Count; ++i)
+            for (int i = 0; i < _sprites.Count; ++i)
             {
                 var col = i % cols;
                 var row = (int)Math.Floor(i / (double)cols) % rows;
@@ -164,7 +161,7 @@ namespace SpriteCompression
             }
 
             //Apply canvas
-            pictureBox3.Image = canvas;
+            FilteredBox.Image = canvas;
 
             //Globals
             gReducedMap = canvas;
@@ -186,7 +183,7 @@ namespace SpriteCompression
 
             //Calculate the resolution of the first sprite
             int width = 0, height = 0;
-            if(bitmaps.Count() > 0)
+            if (bitmaps.Count() > 0)
             {
                 width = bitmaps[0].Width;
                 height = bitmaps[0].Height;
@@ -197,9 +194,9 @@ namespace SpriteCompression
             uniqueColours.Add(Color.FromArgb(0, 0, 0, 0)); //BG Layer (pallet ID zero) is protected
             foreach (var sprite in bitmaps)
             {
-                for(var x = 0; x < sprite.Width; ++x)
+                for (var x = 0; x < sprite.Width; ++x)
                 {
-                    for(var y = 0; y < sprite.Height; ++y)
+                    for (var y = 0; y < sprite.Height; ++y)
                     {
                         Color pixel = sprite.GetPixel(x, y);
 
@@ -213,7 +210,7 @@ namespace SpriteCompression
 
                         bool bLikeColour = false;
 
-                        foreach(var colour in uniqueColours)
+                        foreach (var colour in uniqueColours)
                         {
                             float hTolerance = 20.0f; //In degrees
                             float sTolerance = 0.1f;
@@ -275,13 +272,13 @@ namespace SpriteCompression
             gInstance.Flush();
 
             //Apply canvas
-            pictureBox1.Image = canvas;
+            SpritemapBox.Image = canvas;
 
             //Text updates
-            label5.Text = bitmaps.Count.ToString();
-            label6.Text = width.ToString() + "x" + height.ToString();
-            label7.Text = uniqueColours.Count.ToString();
-            label9.Text = canvas.Width.ToString() + "x" + canvas.Height.ToString();
+            SpriteCountLabel.Text = bitmaps.Count.ToString();
+            SpriteResLabel.Text = width.ToString() + "x" + height.ToString();
+            MapColorCountLabel.Text = uniqueColours.Count.ToString();
+            MapResLabel.Text = canvas.Width.ToString() + "x" + canvas.Height.ToString();
 
             //Create pallet canvas
             GenerateColourPallet(uniqueColours);
@@ -293,22 +290,16 @@ namespace SpriteCompression
             gColorMap = uniqueColours;
         }
 
-        private void checkBox1_CheckedChanged(object sender, EventArgs e)
+        private void FilterCheckbox_CheckedChanged(object sender, EventArgs e)
         {
-            if(checkBox1.Checked)
-            {
-                pictureBox3.Image = gProcessedRMap;
-            }
-            else
-            {
-                pictureBox3.Image = gReducedMap;
-            }
+            //Swap between processed and unprocessed
+            FilteredBox.Image = FilterCheckbox.Checked ? gProcessedRMap : gReducedMap;
         }
 
-        private void button2_Click(object sender, EventArgs e)
+        private void ProcessFilterButton_Click(object sender, EventArgs e)
         {
-            checkBox1.Enabled = true;
-            checkBox1.Checked = true;
+            FilterCheckbox.Enabled = true;
+            FilterCheckbox.Checked = true;
             ProcessRMap();
         }
     }
